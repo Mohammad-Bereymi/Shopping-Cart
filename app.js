@@ -9,8 +9,10 @@ const cartItems = document.querySelector(".cart-items");
 const cartTotal = document.querySelector(".cart-total");
 const cartContent = document.querySelector(".cart-content");
 const productsDOM = document.querySelector(".products-center");
+const clearCartBtn = document.querySelector(".clear-cart");
 
 let cart = [];
+let buttonsDOM = [];
 //add event listener
 
 cartBtn.addEventListener("click", showModalFunction);
@@ -26,6 +28,7 @@ document.addEventListener("DOMContentLoaded", () => {
   ui.displayProducts(productsData);
   ui.getCartBtns();
   Storage.saveProducts(productsData);
+  ui.cartLogic();
 });
 //functions
 
@@ -70,6 +73,7 @@ class UI {
   }
   getCartBtns() {
     const addToCartBtns = [...document.querySelectorAll(".add-to-cart")];
+    buttonsDOM = addToCartBtns;
     addToCartBtns.forEach((btn) => {
       const id = btn.dataset.id;
       const isInCart = cart.find((item) => item.id === id);
@@ -130,6 +134,80 @@ class UI {
 
   populateCart(cart) {
     cart.forEach((item) => this.addCartItem(item));
+  }
+  cartLogic() {
+    // clear cart button
+    clearCartBtn.addEventListener("click", () => {
+      this.clearCart();
+    });
+    // cart functionality
+    cartContent.addEventListener("click", (event) => {
+      if (event.target.classList.contains("remove-item")) {
+        const removeItem = event.target;
+        const id = removeItem.dataset.id;
+        console.log(id);
+        // remove from DOM :
+        // console.log(removeItem.parentElement);
+        cartContent.removeChild(removeItem.parentElement);
+
+        // remove item from cart not DOM !
+        this.removeItem(id);
+      } else if (event.target.classList.contains("fa-chevron-up")) {
+        const addQuantity = event.target;
+        const id = addQuantity.dataset.id;
+        const addedItem = cart.find((c) => c.id == id);
+        addedItem.quantity++;
+        // update storage
+        Storage.saveCart(cart);
+        // update total price
+        this.setCartValue(cart);
+        // update item quantity :
+        // console.log(addQuantity.nextElementSibling);
+        addQuantity.nextElementSibling.innerText = addedItem.quantity;
+      } else if (event.target.classList.contains("fa-chevron-down")) {
+        const subQuantity = event.target;
+        const id = subQuantity.dataset.id;
+        const substractedItem = cart.find((c) => c.id == id);
+
+        if (substractedItem.quantity === 1) {
+          this.removeItem(id);
+          cartContent.removeChild(subQuantity.parentElement.parentElement);
+          return;
+        }
+
+        substractedItem.quantity--;
+        // update storage
+        Storage.saveCart(cart);
+        // update total price
+        this.setCartValue(cart);
+        // update item quantity :
+        // console.log(subQuantity.nextElementSibling);
+        subQuantity.previousElementSibling.innerText = substractedItem.quantity;
+      }
+    });
+  }
+  clearCart() {
+    // loop on all the item and tigger remove for each one
+    cart.forEach((item) => this.removeItem(item.id));
+    // console.log(cartContent.children[0]);
+    while (cartContent.children.length) {
+      cartContent.removeChild(cartContent.children[0]);
+    }
+    closeModalFunction();
+  }
+
+  removeItem(id) {
+    // resuable method for signle remove and clear all
+    cart = cart.filter((cartItem) => cartItem.id != id);
+    this.setCartValue(cart);
+    Storage.saveCart(cart);
+    const button = this.getSingleButton(id);
+    button.disabled = false;
+    button.innerHTML = `add to cart`;
+  }
+  getSingleButton(id) {
+    // should be parseInt to get correct result
+    return buttonsDOM.find((btn) => parseInt(btn.dataset.id) === parseInt(id));
   }
 }
 // storage :
